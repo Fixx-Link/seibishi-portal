@@ -1,9 +1,11 @@
 import { cookies } from "next/headers"
+import { redirect } from "next/navigation"
 import { createServerClient } from "@supabase/ssr"
 import { getMechanicByEmail } from "@/lib/notion/mechanics"
 import { logout } from "@/app/logout/actions"
 
 export default async function AccountPage() {
+  // 🔥 ここが重要
   const cookieStore = await cookies()
 
   const supabase = createServerClient(
@@ -11,33 +13,30 @@ export default async function AccountPage() {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        get: (name: string) => cookieStore.get(name)?.value,
-        set: () => {},
-        remove: () => {},
+        get(name: string) {
+          return cookieStore.get(name)?.value
+        },
+        set() {},
+        remove() {},
       },
     }
   )
 
-  // 🔐 ログインユーザー取得
   const {
     data: { user },
   } = await supabase.auth.getUser()
 
-  const email = user?.email
-  if (!email) {
-    return <div className="p-6">ユーザー情報が取得できません</div>
+  if (!user?.email) {
+    redirect("/login")
   }
 
-  // 🧑‍🔧 Notionから整備士情報取得
-  const mechanic = await getMechanicByEmail(email)
+  const mechanic = await getMechanicByEmail(user.email)
+
   if (!mechanic) {
     return <div className="p-6">整備士情報が見つかりません</div>
   }
 
-  // Notionの型チェック回避（ページであると明示）
-const page = mechanic as any
-const p = page.properties
-
+  const p = (mechanic as any)?.properties ?? {}
 
   return (
     <div className="p-6 space-y-2">
@@ -59,7 +58,6 @@ const p = page.properties
       <p>🧾 適格事業者番号: {p["適格請求書発行事業者番号"]?.rich_text?.[0]?.plain_text ?? "-"}</p>
       <p>📋 BS登録: {p["BS登録"]?.status?.name ?? "-"}</p>
 
-      {/* 🔓 ログアウト */}
       <form action={logout} className="mt-10">
         <button
           type="submit"
