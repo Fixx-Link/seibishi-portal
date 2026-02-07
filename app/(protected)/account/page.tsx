@@ -34,7 +34,10 @@ export default async function AccountPage() {
     return <div className="p-6">整備士情報が見つかりません</div>
   }
 
-  const p = mechanic.properties
+  // Notionの型チェック回避（ページであると明示）
+const page = mechanic as any
+const p = page.properties
+
 
   return (
     <div className="p-6 space-y-2">
