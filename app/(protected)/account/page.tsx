@@ -42,7 +42,7 @@ export default async function AccountPage() {
     <div className="p-6 space-y-2">
       <h1 className="text-2xl font-bold mb-4">アカウント情報</h1>
 
-      <p>🆔 整備士ID: {p["整備士ID"]?.number ?? "-"}</p>
+      <p>🆔 整備士ID: {p["整備士ID"]?.rich_text?.[0]?.plain_text ?? "-"}</p>
       <p>👤 名前: {p["名前"]?.title?.[0]?.plain_text ?? "-"}</p>
       <p>🏠 住所: {p["住所のみ"]?.rich_text?.[0]?.plain_text ?? "-"}</p>
       <p>📮 郵便番号: {p["郵便番号"]?.rich_text?.[0]?.plain_text ?? "-"}</p>
@@ -51,10 +51,10 @@ export default async function AccountPage() {
 
       <hr className="my-4" />
 
-      <p>🏦 銀行名: {p["口座（銀行名）"]?.rich_text?.[0]?.plain_text ?? "-"}</p>
-      <p>🏢 支店名: {p["口座（支店名）"]?.rich_text?.[0]?.plain_text ?? "-"}</p>
-      <p>🔢 口座番号: {p["口座（口座番号）"]?.rich_text?.[0]?.plain_text ?? "-"}</p>
-      <p>👤 名義: {p["口座（名義）"]?.rich_text?.[0]?.plain_text ?? "-"}</p>
+      <p>🏦 銀行名: {p["口座(銀行名)"]?.rich_text?.[0]?.plain_text ?? "-"}</p>
+      <p>🏢 支店名: {p["口座(支店名)"]?.rich_text?.[0]?.plain_text ?? "-"}</p>
+      <p>🔢 口座番号: {p["口座(口座番号)"]?.rich_text?.[0]?.plain_text ?? "-"}</p>
+      <p>👤 名義: {p["口座(名義)"]?.rich_text?.[0]?.plain_text ?? "-"}</p>
       <p>🧾 適格事業者番号: {p["適格請求書発行事業者番号"]?.rich_text?.[0]?.plain_text ?? "-"}</p>
       <p>📋 BS登録: {p["BS登録"]?.status?.name ?? "-"}</p>
 
