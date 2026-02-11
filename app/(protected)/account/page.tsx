@@ -37,7 +37,7 @@ export default async function AccountPage() {
     <div className="p-6 space-y-2">
       <h1 className="text-2xl font-bold mb-4">アカウント情報</h1>
 
-      <p>🆔 整備士ID: {p["整備士ID"]?.number ?? "-"}</p>
+      <p>🆔 整備士ID: {p["整備士ID"]?.rich_text?.[0]?.plain_text ?? "-"}</p>
       <p>👤 名前: {p["名前"]?.title?.[0]?.plain_text ?? "-"}</p>
       <p>🏠 住所: {p["住所のみ"]?.rich_text?.[0]?.plain_text ?? "-"}</p>
       <p>📮 郵便番号: {p["郵便番号"]?.rich_text?.[0]?.plain_text ?? "-"}</p>

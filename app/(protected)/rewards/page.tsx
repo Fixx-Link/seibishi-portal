@@ -80,10 +80,10 @@ export default async function RewardsPage({
           const date = p["作業日"]?.date?.start ?? "-"
           const id = p["案件ID"]?.number ?? "-"
           const customer =
-            p["顧客名（正式）"]?.rich_text?.[0]?.plain_text ?? "-"
-          const reward = p["整備士報酬（税込）"]?.number ?? 0
-          const travel = p["交通費（税込）"]?.number ?? 0
-          const cost = p["立替代（税込）"]?.formula?.number ?? 0
+            p["顧客名(正式)"]?.rich_text?.[0]?.plain_text ?? "-"
+          const reward = p["整備士報酬(税込)"]?.number ?? 0
+          const travel = p["交通費(税込)"]?.number ?? 0
+          const cost = p["立替代(税込)"]?.formula?.number ?? 0
 
           return (
             <div key={job.id} className="border rounded-lg p-4 shadow">
