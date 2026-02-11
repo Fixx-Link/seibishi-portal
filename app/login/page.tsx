@@ -6,9 +6,10 @@ import { createBrowserClient } from "@supabase/ssr"
 
 export default function LoginPage() {
   const router = useRouter()
+
   const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    process.env.NEXT_PUBLIC_SUPABASE_URL as string,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string
   )
 
   const [email, setEmail] = useState("")
@@ -31,7 +32,7 @@ export default function LoginPage() {
       return
     }
 
-    // ✅ ここ超重要
+    // ログイン成功 → 保護ページへ
     router.push("/jobs")
     router.refresh()
   }
@@ -43,7 +44,7 @@ export default function LoginPage() {
 
         <input
           type="email"
-          placeholder="メール"
+          placeholder="メールアドレス"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           className="w-full mb-3 px-3 py-2 border rounded"
@@ -60,7 +61,7 @@ export default function LoginPage() {
         <button
           onClick={handleLogin}
           disabled={loading}
-          className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700"
+          className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 disabled:opacity-50"
         >
           {loading ? "ログイン中..." : "ログイン"}
         </button>
