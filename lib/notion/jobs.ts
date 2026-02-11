@@ -1,9 +1,14 @@
 import { notion } from "./client"
+import { QueryDataSourceParameters } from "@notionhq/client/build/src/api-endpoints"
 
+/**
+ * 🔵 進行中案件取得
+ */
 export async function getMyActiveJobs(email: string) {
-  const response = await notion.dataSources.query({
-    data_source_id: process.env.NOTION_DATABASE_ID!,
+  if (!email) return []
 
+  const params: QueryDataSourceParameters = {
+    data_source_id: process.env.NOTION_DATABASE_ID!,
     filter: {
       and: [
         {
@@ -30,23 +35,33 @@ export async function getMyActiveJobs(email: string) {
         },
       ],
     },
-
     sorts: [
       {
         property: "作業日",
         direction: "ascending",
       },
     ],
-  })
+  }
 
-  return response.results
+  try {
+    const response = await notion.dataSources.query(params)
+    return response.results
+  } catch (error) {
+    console.error("進行中案件取得エラー:", error)
+    return []
+  }
 }
 
+/**
+ * 🟢 完了案件取得
+ */
 export async function getCompletedJobsByEmail(
   email: string,
   start?: string,
   end?: string
 ) {
+  if (!email) return []
+
   const filters: any[] = [
     {
       property: "整備士メアド",
@@ -76,11 +91,36 @@ export async function getCompletedJobsByEmail(
     })
   }
 
-  const response = await notion.dataSources.query({
+  const params: QueryDataSourceParameters = {
     data_source_id: process.env.NOTION_DATABASE_ID!,
     filter: { and: filters },
     sorts: [{ property: "作業日", direction: "ascending" }],
-  })
+  }
 
-  return response.results
+  try {
+    const response = await notion.dataSources.query(params)
+    return response.results
+  } catch (error) {
+    console.error("完了案件取得エラー:", error)
+    return []
+  }
+}
+
+/**
+ * 🟣 単一案件取得（詳細ページ用）
+ */
+export async function getJobById(id: string) {
+  if (!id) return null
+
+  try {
+    // 🔥 ハイフンはそのままでOK
+    const response = await notion.pages.retrieve({
+      page_id: id,
+    })
+
+    return response
+  } catch (error) {
+    console.error("案件詳細取得エラー:", error)
+    return null
+  }
 }

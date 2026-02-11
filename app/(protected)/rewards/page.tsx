@@ -2,6 +2,16 @@ import { cookies } from "next/headers"
 import { createServerClient } from "@supabase/ssr"
 import { getCompletedJobsByEmail } from "@/lib/notion/jobs"
 
+/* ------------------------------
+   🔥 日付フォーマット（UTCズレ防止）
+------------------------------ */
+function formatDateOnly(date: Date) {
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, "0")
+  const d = String(date.getDate()).padStart(2, "0")
+  return `${y}-${m}-${d}`
+}
+
 function getMonthRange(offset = 0) {
   const now = new Date()
   const target = new Date(now.getFullYear(), now.getMonth() + offset, 1)
@@ -11,8 +21,8 @@ function getMonthRange(offset = 0) {
 
   return {
     label: `${target.getFullYear()}年${target.getMonth() + 1}月`,
-    start: start.toISOString(),
-    end: end.toISOString(),
+    start: formatDateOnly(start),
+    end: formatDateOnly(end),
   }
 }
 
@@ -48,20 +58,51 @@ export default async function RewardsPage({
   const selected =
     months.find((m) => m.label === searchParams?.month) ?? months[0]
 
-  const jobs = await getCompletedJobsByEmail(email, selected.start, selected.end)
+  const jobs = await getCompletedJobsByEmail(
+    email,
+    selected.start,
+    selected.end
+  )
+
+  const text = (field: any) =>
+    field?.rich_text?.[0]?.plain_text ??
+    field?.title?.[0]?.plain_text ??
+    "-"
+
+  const number = (field: any) => field?.number ?? 0
+
+  const formatDisplayDate = (iso: string | undefined) => {
+    if (!iso) return "-"
+    const d = new Date(iso)
+    return `${d.getMonth() + 1}月${d.getDate()}日`
+  }
+
+  /* ------------------------------
+     🔥 月合計計算
+  ------------------------------ */
+  let total = 0
+  jobs.forEach((job: any) => {
+    const p = job.properties ?? {}
+    const reward = number(p["整備士報酬(税込)"])
+    const travel = number(p["交通費(税込)"])
+    const cost = p["立替代(税込)"]?.formula?.number ?? 0
+    total += reward + travel + cost
+  })
 
   return (
-    <div className="p-6">
+    <div className="p-4 max-w-full">
       <h1 className="text-2xl font-bold mb-4">報酬確認</h1>
 
       {/* 月タブ */}
-      <div className="flex gap-2 mb-6">
+      <div className="flex gap-2 mb-6 flex-wrap">
         {months.map((m) => (
           <a
             key={m.label}
             href={`/rewards?month=${encodeURIComponent(m.label)}`}
-            className={`px-4 py-2 rounded-lg border ${
-              m.label === selected.label ? "bg-black text-white" : ""
+            className={`px-4 py-2 rounded-lg border text-sm ${
+              m.label === selected.label
+                ? "bg-black text-white"
+                : "bg-white"
             }`}
           >
             {m.label}
@@ -69,33 +110,98 @@ export default async function RewardsPage({
         ))}
       </div>
 
+      {/* 🔥 合計表示 */}
+      <div className="bg-black text-white rounded-xl p-6 mb-6 shadow-lg">
+        <p className="text-sm opacity-70">総支払額</p>
+        <p className="text-3xl font-bold mt-2">
+          ¥{total.toLocaleString()}
+        </p>
+      </div>
+
       {jobs.length === 0 && (
-        <p className="text-gray-500">この月の報酬データはありません</p>
+        <p className="text-gray-500">
+          この月の報酬データはありません
+        </p>
       )}
 
-      <div className="grid gap-4">
-        {jobs.map((job: any) => {
-          const p = (job as any).properties ?? {}
+      {/* 🔥 横スクロール対応テーブル */}
+      <div className="overflow-x-auto">
+        <table className="min-w-[1000px] w-full text-sm border">
+          <thead className="bg-gray-100 text-xs">
+            <tr>
+              <th className="p-2 border">作業日</th>
+              <th className="p-2 border">案件ID</th>
+              <th className="p-2 border">顧客名</th>
+              <th className="p-2 border">受注チャネル</th>
+              <th className="p-2 border">ナンバー</th>
+              <th className="p-2 border">初度登録</th>
+              <th className="p-2 border">型式</th>
+              <th className="p-2 border">車両情報</th>
+              <th className="p-2 border">総指数</th>
+              <th className="p-2 border">管理No</th>
+              <th className="p-2 border">備考</th>
+              <th className="p-2 border text-right">報酬</th>
+              <th className="p-2 border text-right">交通費</th>
+              <th className="p-2 border text-right">立替</th>
+            </tr>
+          </thead>
+          <tbody>
+            {jobs.map((job: any) => {
+              const p = job.properties ?? {}
 
-          const date = p["作業日"]?.date?.start ?? "-"
-          const id = p["案件ID"]?.number ?? "-"
-          const customer =
-            p["顧客名(正式)"]?.rich_text?.[0]?.plain_text ?? "-"
-          const reward = p["整備士報酬(税込)"]?.number ?? 0
-          const travel = p["交通費(税込)"]?.number ?? 0
-          const cost = p["立替代(税込)"]?.formula?.number ?? 0
+              const reward = number(p["整備士報酬(税込)"])
+              const travel = number(p["交通費(税込)"])
+              const cost = p["立替代(税込)"]?.formula?.number ?? 0
 
-          return (
-            <div key={job.id} className="border rounded-lg p-4 shadow">
-              <p className="text-sm text-gray-500">{date}</p>
-              <p>案件ID: {id}</p>
-              <p>顧客名: {customer}</p>
-              <p>報酬: ¥{reward.toLocaleString()}</p>
-              <p>交通費: ¥{travel.toLocaleString()}</p>
-              <p>立替代: ¥{cost.toLocaleString()}</p>
-            </div>
-          )
-        })}
+              return (
+                <tr key={job.id} className="hover:bg-gray-50">
+                  <td className="p-2 border">
+                    {formatDisplayDate(p["作業日"]?.date?.start)}
+                  </td>
+                  <td className="p-2 border">
+                    {p["案件ID"]?.number ?? "-"}
+                  </td>
+                  <td className="p-2 border">
+                    {text(p["顧客名(正式)"])}
+                  </td>
+                  <td className="p-2 border">
+                    {text(p["受注チャネル"])}
+                  </td>
+                  <td className="p-2 border">
+                    {text(p["自動車登録番号（ナンバー）"])}
+                  </td>
+                  <td className="p-2 border">
+                    {text(p["初度登録年月"])}
+                  </td>
+                  <td className="p-2 border">
+                    {text(p["型式"])}
+                  </td>
+                  <td className="p-2 border">
+                    {text(p["車両情報"])}
+                  </td>
+                  <td className="p-2 border">
+                    {text(p["総指数(ディーラー案件用)"])}
+                  </td>
+                  <td className="p-2 border">
+                    {text(p["先方管理No."])}
+                  </td>
+                  <td className="p-2 border">
+                    {text(p["備考(整備士)"])}
+                  </td>
+                  <td className="p-2 border text-right">
+                    ¥{reward.toLocaleString()}
+                  </td>
+                  <td className="p-2 border text-right">
+                    ¥{travel.toLocaleString()}
+                  </td>
+                  <td className="p-2 border text-right">
+                    ¥{cost.toLocaleString()}
+                  </td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
       </div>
     </div>
   )
