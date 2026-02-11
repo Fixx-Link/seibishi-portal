@@ -28,9 +28,11 @@ export default async function RewardsPage({
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        get: (name: string) => cookieStore.get(name)?.value,
-        set: () => {},
-        remove: () => {},
+        get(name: string) {
+          return cookieStore.get(name)?.value
+        },
+        set() {},
+        remove() {},
       },
     }
   )
@@ -73,7 +75,7 @@ export default async function RewardsPage({
 
       <div className="grid gap-4">
         {jobs.map((job: any) => {
-          const p = job.properties
+          const p = (job as any).properties ?? {}
 
           const date = p["作業日"]?.date?.start ?? "-"
           const id = p["案件ID"]?.number ?? "-"
