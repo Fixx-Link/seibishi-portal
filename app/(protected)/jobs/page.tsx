@@ -49,8 +49,8 @@ export default async function JobsPage() {
             p["顧客住所(正式)"]?.rich_text?.[0]?.plain_text ?? "-"
           const car =
             p["車種"]?.rich_text?.[0]?.plain_text ?? "-"
-          const reward = p["整備士報酬（税込）"]?.number ?? "-"
-          const travel = p["交通費（税込）"]?.number ?? "-"
+          const reward = p["整備士報酬(税込)"]?.number ?? "-"
+          const travel = p["交通費(税込)"]?.number ?? "-"
 
           return (
             <div key={job.id} className="border rounded-lg p-4 shadow">
