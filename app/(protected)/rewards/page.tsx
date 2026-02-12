@@ -29,8 +29,11 @@ function getMonthRange(offset = 0) {
 export default async function RewardsPage({
   searchParams,
 }: {
-  searchParams?: { month?: string }
+  searchParams: Promise<{ month?: string }>
 }) {
+  // ✅ Promiseをawaitする
+  const params = await searchParams
+
   const cookieStore = await cookies()
 
   const supabase = createServerClient(
@@ -55,8 +58,12 @@ export default async function RewardsPage({
   if (!email) return <div className="p-6">ログイン情報が取得できません</div>
 
   const months = [getMonthRange(0), getMonthRange(-1), getMonthRange(-2)]
+
+  // ✅ searchParamsではなく params を使う
   const selected =
-    months.find((m) => m.label === searchParams?.month) ?? months[0]
+    months.find((m) => m.label === params?.month) ?? months[0]
+
+  console.log("SELECTED:", selected)
 
   const jobs = await getCompletedJobsByEmail(
     email,
@@ -110,7 +117,7 @@ export default async function RewardsPage({
         ))}
       </div>
 
-      {/* 🔥 合計表示 */}
+      {/* 合計表示 */}
       <div className="bg-black text-white rounded-xl p-6 mb-6 shadow-lg">
         <p className="text-sm opacity-70">総支払額</p>
         <p className="text-3xl font-bold mt-2">
@@ -124,7 +131,7 @@ export default async function RewardsPage({
         </p>
       )}
 
-      {/* 🔥 横スクロール対応テーブル */}
+      {/* 横スクロール対応テーブル */}
       <div className="overflow-x-auto">
         <table className="min-w-[1000px] w-full text-sm border">
           <thead className="bg-gray-100 text-xs">

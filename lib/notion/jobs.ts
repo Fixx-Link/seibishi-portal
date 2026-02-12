@@ -53,7 +53,7 @@ export async function getMyActiveJobs(email: string) {
 }
 
 /**
- * 🟢 完了案件取得
+ * 🟢 完了案件取得（dataSources 正式対応版）
  */
 export async function getCompletedJobsByEmail(
   email: string,
@@ -81,13 +81,18 @@ export async function getCompletedJobsByEmail(
     },
   ]
 
-  if (start && end) {
+  // ✅ dateはANDで分ける
+  if (start) {
     filters.push({
       property: "作業日",
-      date: {
-        on_or_after: start,
-        on_or_before: end,
-      },
+      date: { on_or_after: start },
+    })
+  }
+
+  if (end) {
+    filters.push({
+      property: "作業日",
+      date: { on_or_before: end },
     })
   }
 
@@ -97,14 +102,37 @@ export async function getCompletedJobsByEmail(
     sorts: [{ property: "作業日", direction: "ascending" }],
   }
 
+  console.log("======== DEBUG START ========")
+  console.log("EMAIL:", email)
+  console.log("DATE:", start, end)
+  console.log("FILTER:", JSON.stringify(params.filter, null, 2))
+  
+  
+
   try {
     const response = await notion.dataSources.query(params)
+
+    console.log("取得件数:", response.results.length)
+
+    if (response.results.length > 0) {
+      const first = response.results[0] as any
+
+      console.log("最初の作業日:", first.properties?.["作業日"])
+      console.log("案件ID:", first.properties?.["案件ID"])
+      console.log("受注チャネル:", first.properties?.["受注チャネル"])
+    }
+
+
+    console.log("======== DEBUG END ========")
+
     return response.results
   } catch (error) {
     console.error("完了案件取得エラー:", error)
     return []
   }
 }
+
+
 
 /**
  * 🟣 単一案件取得（詳細ページ用）
@@ -113,7 +141,6 @@ export async function getJobById(id: string) {
   if (!id) return null
 
   try {
-    // 🔥 ハイフンはそのままでOK
     const response = await notion.pages.retrieve({
       page_id: id,
     })
