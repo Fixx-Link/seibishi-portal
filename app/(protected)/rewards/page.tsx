@@ -31,9 +31,7 @@ export default async function RewardsPage({
 }: {
   searchParams: Promise<{ month?: string }>
 }) {
-  // ✅ Promiseをawaitする
   const params = await searchParams
-
   const cookieStore = await cookies()
 
   const supabase = createServerClient(
@@ -59,11 +57,8 @@ export default async function RewardsPage({
 
   const months = [getMonthRange(0), getMonthRange(-1), getMonthRange(-2)]
 
-  // ✅ searchParamsではなく params を使う
   const selected =
     months.find((m) => m.label === params?.month) ?? months[0]
-
-  console.log("SELECTED:", selected)
 
   const jobs = await getCompletedJobsByEmail(
     email,
@@ -71,12 +66,26 @@ export default async function RewardsPage({
     selected.end
   )
 
+  /* ------------------------------
+     🔹 共通ヘルパー
+  ------------------------------ */
+
   const text = (field: any) =>
     field?.rich_text?.[0]?.plain_text ??
     field?.title?.[0]?.plain_text ??
     "-"
 
   const number = (field: any) => field?.number ?? 0
+
+  // 🔥 unique_id対応（#なし）
+  const uniqueId = (field: any) =>
+    field?.unique_id?.number ?? "-"
+
+  // 🔥 ロールアップ安全取得
+  const rollupTitle = (field: any) =>
+    field?.rollup?.array?.[0]?.title?.[0]?.plain_text ??
+    field?.rollup?.array?.[0]?.rich_text?.[0]?.plain_text ??
+    "-"
 
   const formatDisplayDate = (iso: string | undefined) => {
     if (!iso) return "-"
@@ -131,7 +140,7 @@ export default async function RewardsPage({
         </p>
       )}
 
-      {/* 横スクロール対応テーブル */}
+      {/* テーブル */}
       <div className="overflow-x-auto">
         <table className="min-w-[1000px] w-full text-sm border">
           <thead className="bg-gray-100 text-xs">
@@ -165,42 +174,57 @@ export default async function RewardsPage({
                   <td className="p-2 border">
                     {formatDisplayDate(p["作業日"]?.date?.start)}
                   </td>
+
+                  {/* ✅ unique_id 正式対応 */}
                   <td className="p-2 border">
-                    {p["案件ID"]?.number ?? "-"}
+                    {uniqueId(p["案件ID"])}
                   </td>
+
                   <td className="p-2 border">
                     {text(p["顧客名(正式)"])}
                   </td>
+
+                  {/* ✅ ロールアップ表示 */}
                   <td className="p-2 border">
-                    {text(p["受注チャネル"])}
+                    {rollupTitle(p["受注チャネルロールアップ"])}
                   </td>
+
                   <td className="p-2 border">
                     {text(p["自動車登録番号（ナンバー）"])}
                   </td>
+
                   <td className="p-2 border">
                     {text(p["初度登録年月"])}
                   </td>
+
                   <td className="p-2 border">
                     {text(p["型式"])}
                   </td>
+
                   <td className="p-2 border">
                     {text(p["車両情報"])}
                   </td>
+
                   <td className="p-2 border">
                     {text(p["総指数(ディーラー案件用)"])}
                   </td>
+
                   <td className="p-2 border">
                     {text(p["先方管理No."])}
                   </td>
+
                   <td className="p-2 border">
                     {text(p["備考(整備士)"])}
                   </td>
+
                   <td className="p-2 border text-right">
                     ¥{reward.toLocaleString()}
                   </td>
+
                   <td className="p-2 border text-right">
                     ¥{travel.toLocaleString()}
                   </td>
+
                   <td className="p-2 border text-right">
                     ¥{cost.toLocaleString()}
                   </td>

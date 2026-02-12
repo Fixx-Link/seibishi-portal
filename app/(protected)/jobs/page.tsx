@@ -38,6 +38,15 @@ export default async function JobsPage() {
   const number = (field: any) =>
     field?.number ?? "-"
 
+  const uniqueId = (field: any) =>
+    field?.unique_id?.number ?? "-"
+
+  const formatDisplayDate = (iso?: string) => {
+    if (!iso) return "-"
+    const d = new Date(iso)
+    return `${d.getMonth() + 1}月${d.getDate()}日`
+  }
+
   const statusColor = (status: string) => {
     if (status === "スタンバイ")
       return "bg-yellow-100 text-yellow-800"
@@ -54,26 +63,29 @@ export default async function JobsPage() {
         <p className="text-gray-500">現在案件はありません</p>
       )}
 
-      <div className="space-y-4">
+      <div className="space-y-5">
         {jobs.map((job: any) => {
           const p = job.properties
 
-          const date = p["作業日"]?.date?.start ?? "-"
+          const date = formatDisplayDate(p["作業日"]?.date?.start)
           const place = text(p["顧客住所(正式)"])
-          const car = text(p["車種"])
+          const caseId = uniqueId(p["案件ID"])
           const reward = number(p["整備士報酬(税込)"])
           const travel = number(p["交通費(税込)"])
           const status = p["作業ステータス"]?.status?.name ?? "-"
 
           return (
             <Link key={job.id} href={`/jobs/${job.id}`}>
-              <div className="border rounded-xl p-4 shadow hover:shadow-md transition bg-white active:scale-[0.99]">
+              <div className="border rounded-2xl p-6 shadow-sm hover:shadow-md transition bg-white active:scale-[0.99]">
 
-                {/* 上段 */}
-                <div className="flex justify-between items-start mb-2">
-                  <p className="text-sm text-gray-500">{date}</p>
+                {/* 🔥 上段：日付 左 / ステータス 右 */}
+                <div className="flex justify-between items-start mb-4">
+                  <p className="text-3xl font-extrabold text-gray-900 tracking-tight">
+                    {date}
+                  </p>
+
                   <span
-                    className={`text-xs px-2 py-1 rounded-full ${statusColor(
+                    className={`text-xs px-3 py-1 rounded-full font-medium ${statusColor(
                       status
                     )}`}
                   >
@@ -81,22 +93,23 @@ export default async function JobsPage() {
                   </span>
                 </div>
 
-                {/* メイン情報 */}
-                <p className="font-semibold text-lg mb-1">
+                {/* 案件ID */}
+                <p className="text-lg font-semibold text-black mb-2">
+                  案件ID: {caseId}
+                </p>
+
+                {/* 住所 */}
+                <p className="text-gray-700 mb-4">
                   📍 {place}
                 </p>
 
-                <p className="text-gray-700 mb-2">
-                  🚗 {car}
-                </p>
-
                 {/* 金額 */}
-                <div className="flex justify-between text-sm border-t pt-2 mt-2">
+                <div className="flex justify-between text-sm border-t pt-4 mt-4 text-gray-800">
                   <p>報酬: ¥{reward}</p>
                   <p>交通費: ¥{travel}</p>
                 </div>
 
-                <p className="text-xs text-blue-500 mt-2">
+                <p className="text-xs text-blue-500 mt-3">
                   詳細を見る →
                 </p>
               </div>

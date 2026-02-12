@@ -19,7 +19,7 @@ function getStatus(prop: any) {
 
 function getId(prop: any) {
   return prop?.unique_id?.number
-    ? `#${prop.unique_id.number}`
+    ? `${prop.unique_id.number}`
     : "-"
 }
 
