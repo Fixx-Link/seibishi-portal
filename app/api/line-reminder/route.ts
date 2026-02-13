@@ -1,7 +1,15 @@
 import { NextResponse } from "next/server"
 import { getJobsByDate } from "@/lib/notion/jobs"
 
-export async function GET() {
+export async function GET(req: Request) {
+  // 🔐 Cron認証チェック
+  if (
+    req.headers.get("authorization") !==
+    `Bearer ${process.env.CRON_SECRET}`
+  ) {
+    return new Response("Unauthorized", { status: 401 })
+  }
+
   try {
     const tomorrow = new Date()
     tomorrow.setDate(tomorrow.getDate() + 1)
