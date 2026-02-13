@@ -151,3 +151,27 @@ export async function getJobById(id: string) {
     return null
   }
 }
+/**
+ * 🔴 指定日の案件取得（LINEリマインド用）
+ */
+export async function getJobsByDate(date: string) {
+  if (!date) return []
+
+  const params: QueryDataSourceParameters = {
+    data_source_id: process.env.NOTION_DATABASE_ID!,
+    filter: {
+      property: "作業日",
+      date: {
+        equals: date,
+      },
+    },
+  }
+
+  try {
+    const response = await notion.dataSources.query(params)
+    return response.results
+  } catch (error) {
+    console.error("日付指定案件取得エラー:", error)
+    return []
+  }
+}
