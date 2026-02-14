@@ -2,6 +2,34 @@ import { notion } from "./client"
 import { QueryDataSourceParameters } from "@notionhq/client/build/src/api-endpoints"
 
 /**
+ * 共通：全件取得ヘルパー（ページネーション対応）
+ */
+async function fetchAll(params: QueryDataSourceParameters) {
+  let results: any[] = []
+  let hasMore = true
+  let startCursor: string | undefined = undefined
+
+  try {
+    while (hasMore) {
+      const response = await notion.dataSources.query({
+        ...params,
+        start_cursor: startCursor,
+        page_size: 100,
+      })
+
+      results = results.concat(response.results)
+      hasMore = response.has_more
+      startCursor = response.next_cursor ?? undefined
+    }
+
+    return results
+  } catch (error) {
+    console.error("Notion全件取得エラー:", error)
+    return []
+  }
+}
+
+/**
  * 🔵 進行中案件取得
  */
 export async function getMyActiveJobs(email: string) {
@@ -43,17 +71,11 @@ export async function getMyActiveJobs(email: string) {
     ],
   }
 
-  try {
-    const response = await notion.dataSources.query(params)
-    return response.results
-  } catch (error) {
-    console.error("進行中案件取得エラー:", error)
-    return []
-  }
+  return await fetchAll(params)
 }
 
 /**
- * 🟢 完了案件取得（dataSources 正式対応版）
+ * 🟢 完了案件取得（期間指定対応）
  */
 export async function getCompletedJobsByEmail(
   email: string,
@@ -81,7 +103,6 @@ export async function getCompletedJobsByEmail(
     },
   ]
 
-  // ✅ dateはANDで分ける
   if (start) {
     filters.push({
       property: "作業日",
@@ -102,37 +123,8 @@ export async function getCompletedJobsByEmail(
     sorts: [{ property: "作業日", direction: "ascending" }],
   }
 
-  console.log("======== DEBUG START ========")
-  console.log("EMAIL:", email)
-  console.log("DATE:", start, end)
-  console.log("FILTER:", JSON.stringify(params.filter, null, 2))
-  
-  
-
-  try {
-    const response = await notion.dataSources.query(params)
-
-    console.log("取得件数:", response.results.length)
-
-    if (response.results.length > 0) {
-      const first = response.results[0] as any
-
-      console.log("最初の作業日:", first.properties?.["作業日"])
-      console.log("案件ID:", first.properties?.["案件ID"])
-      console.log("受注チャネル:", first.properties?.["受注チャネル"])
-    }
-
-
-    console.log("======== DEBUG END ========")
-
-    return response.results
-  } catch (error) {
-    console.error("完了案件取得エラー:", error)
-    return []
-  }
+  return await fetchAll(params)
 }
-
-
 
 /**
  * 🟣 単一案件取得（詳細ページ用）
@@ -144,13 +136,13 @@ export async function getJobById(id: string) {
     const response = await notion.pages.retrieve({
       page_id: id,
     })
-
     return response
   } catch (error) {
     console.error("案件詳細取得エラー:", error)
     return null
   }
 }
+
 /**
  * 🔴 指定日の案件取得（LINEリマインド用）
  */
@@ -167,11 +159,5 @@ export async function getJobsByDate(date: string) {
     },
   }
 
-  try {
-    const response = await notion.dataSources.query(params)
-    return response.results
-  } catch (error) {
-    console.error("日付指定案件取得エラー:", error)
-    return []
-  }
+  return await fetchAll(params)
 }
