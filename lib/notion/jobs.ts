@@ -1,169 +1,177 @@
 import { notion } from "./client"
 import { QueryDataSourceParameters } from "@notionhq/client/build/src/api-endpoints"
-import { unstable_cache } from "next/cache"
 
 /**
- * 🔵 進行中案件取得（高速化版）
+ * 🔵 進行中案件取得
  */
-export const getMyActiveJobs = unstable_cache(
-  async (email: string) => {
-    if (!email) return []
+export async function getMyActiveJobs(email: string) {
+  if (!email) return []
 
-    const params: QueryDataSourceParameters = {
-      data_source_id: process.env.NOTION_DATABASE_ID!,
-      page_size: 20,
-      filter: {
-        and: [
-          {
-            property: "整備士メアド",
-            rollup: {
-              any: {
-                rich_text: {
-                  equals: email,
-                },
+  const params: QueryDataSourceParameters = {
+    data_source_id: process.env.NOTION_DATABASE_ID!,
+    filter: {
+      and: [
+        {
+          property: "整備士メアド",
+          rollup: {
+            any: {
+              rich_text: {
+                equals: email,
               },
             },
           },
-          {
-            or: [
-              {
-                property: "作業ステータス",
-                status: { equals: "スタンバイ" },
-              },
-              {
-                property: "作業ステータス",
-                status: { equals: "不具合発生中" },
-              },
-            ],
-          },
-        ],
-      },
-      sorts: [
+        },
         {
-          property: "作業日",
-          direction: "ascending",
+          or: [
+            {
+              property: "作業ステータス",
+              status: { equals: "スタンバイ" },
+            },
+            {
+              property: "作業ステータス",
+              status: { equals: "不具合発生中" },
+            },
+          ],
         },
       ],
-    }
+    },
+    sorts: [
+      {
+        property: "作業日",
+        direction: "ascending",
+      },
+    ],
+  }
 
-    try {
-      const response = await notion.dataSources.query(params)
-      return response.results
-    } catch (error) {
-      console.error("進行中案件取得エラー:", error)
-      return []
-    }
-  },
-  ["active-jobs"],
-  { revalidate: 60 }
-)
+  try {
+    const response = await notion.dataSources.query(params)
+    return response.results
+  } catch (error) {
+    console.error("進行中案件取得エラー:", error)
+    return []
+  }
+}
 
 /**
- * 🟢 完了案件取得（高速化版）
+ * 🟢 完了案件取得（dataSources 正式対応版）
  */
-export const getCompletedJobsByEmail = unstable_cache(
-  async (email: string, start?: string, end?: string) => {
-    if (!email) return []
+export async function getCompletedJobsByEmail(
+  email: string,
+  start?: string,
+  end?: string
+) {
+  if (!email) return []
 
-    const filters: any[] = [
-      {
-        property: "整備士メアド",
-        rollup: {
-          any: {
-            rich_text: {
-              equals: email,
-            },
+  const filters: any[] = [
+    {
+      property: "整備士メアド",
+      rollup: {
+        any: {
+          rich_text: {
+            equals: email,
           },
         },
       },
-      {
-        or: [
-          { property: "作業ステータス", status: { equals: "作業完了" } },
-          { property: "作業ステータス", status: { equals: "完了" } },
-        ],
-      },
-    ]
+    },
+    {
+      or: [
+        { property: "作業ステータス", status: { equals: "作業完了" } },
+        { property: "作業ステータス", status: { equals: "完了" } },
+      ],
+    },
+  ]
 
-    if (start) {
-      filters.push({
-        property: "作業日",
-        date: { on_or_after: start },
-      })
+  // ✅ dateはANDで分ける
+  if (start) {
+    filters.push({
+      property: "作業日",
+      date: { on_or_after: start },
+    })
+  }
+
+  if (end) {
+    filters.push({
+      property: "作業日",
+      date: { on_or_before: end },
+    })
+  }
+
+  const params: QueryDataSourceParameters = {
+    data_source_id: process.env.NOTION_DATABASE_ID!,
+    filter: { and: filters },
+    sorts: [{ property: "作業日", direction: "ascending" }],
+  }
+
+  console.log("======== DEBUG START ========")
+  console.log("EMAIL:", email)
+  console.log("DATE:", start, end)
+  console.log("FILTER:", JSON.stringify(params.filter, null, 2))
+  
+  
+
+  try {
+    const response = await notion.dataSources.query(params)
+
+    console.log("取得件数:", response.results.length)
+
+    if (response.results.length > 0) {
+      const first = response.results[0] as any
+
+      console.log("最初の作業日:", first.properties?.["作業日"])
+      console.log("案件ID:", first.properties?.["案件ID"])
+      console.log("受注チャネル:", first.properties?.["受注チャネル"])
     }
 
-    if (end) {
-      filters.push({
-        property: "作業日",
-        date: { on_or_before: end },
-      })
-    }
 
-    const params: QueryDataSourceParameters = {
-      data_source_id: process.env.NOTION_DATABASE_ID!,
-      page_size: 20,
-      filter: { and: filters },
-      sorts: [{ property: "作業日", direction: "ascending" }],
-    }
+    console.log("======== DEBUG END ========")
 
-    try {
-      const response = await notion.dataSources.query(params)
-      return response.results
-    } catch (error) {
-      console.error("完了案件取得エラー:", error)
-      return []
-    }
-  },
-  ["completed-jobs"],
-  { revalidate: 60 }
-)
+    return response.results
+  } catch (error) {
+    console.error("完了案件取得エラー:", error)
+    return []
+  }
+}
+
+
 
 /**
- * 🟣 単一案件取得（詳細ページ用・軽量キャッシュ）
+ * 🟣 単一案件取得（詳細ページ用）
  */
-export const getJobById = unstable_cache(
-  async (id: string) => {
-    if (!id) return null
+export async function getJobById(id: string) {
+  if (!id) return null
 
-    try {
-      const response = await notion.pages.retrieve({
-        page_id: id,
-      })
-      return response
-    } catch (error) {
-      console.error("案件詳細取得エラー:", error)
-      return null
-    }
-  },
-  ["job-detail"],
-  { revalidate: 60 }
-)
+  try {
+    const response = await notion.pages.retrieve({
+      page_id: id,
+    })
 
+    return response
+  } catch (error) {
+    console.error("案件詳細取得エラー:", error)
+    return null
+  }
+}
 /**
  * 🔴 指定日の案件取得（LINEリマインド用）
  */
-export const getJobsByDate = unstable_cache(
-  async (date: string) => {
-    if (!date) return []
+export async function getJobsByDate(date: string) {
+  if (!date) return []
 
-    const params: QueryDataSourceParameters = {
-      data_source_id: process.env.NOTION_DATABASE_ID!,
-      page_size: 50,
-      filter: {
-        property: "作業日",
-        date: {
-          equals: date,
-        },
+  const params: QueryDataSourceParameters = {
+    data_source_id: process.env.NOTION_DATABASE_ID!,
+    filter: {
+      property: "作業日",
+      date: {
+        equals: date,
       },
-    }
+    },
+  }
 
-    try {
-      const response = await notion.dataSources.query(params)
-      return response.results
-    } catch (error) {
-      console.error("日付指定案件取得エラー:", error)
-      return []
-    }
-  },
-  ["jobs-by-date"],
-  { revalidate: 300 }
-)
+  try {
+    const response = await notion.dataSources.query(params)
+    return response.results
+  } catch (error) {
+    console.error("日付指定案件取得エラー:", error)
+    return []
+  }
+}
