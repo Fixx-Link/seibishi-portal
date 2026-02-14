@@ -7,7 +7,7 @@ const withPWA = withPWAInit({
 });
 
 const nextConfig: NextConfig = {
-  /* 既存のconfig optionsがあればここに残す */
+  turbopack: {}, // ← ★これを追加（超重要）
 };
 
 export default withPWA(nextConfig);
