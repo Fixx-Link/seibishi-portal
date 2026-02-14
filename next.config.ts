@@ -3,11 +3,11 @@ import withPWAInit from "next-pwa";
 
 const withPWA = withPWAInit({
   dest: "public",
-  disable: process.env.NODE_ENV === "development",
+  disable: false, // ★まず強制ONで確認（重要）
 });
 
 const nextConfig: NextConfig = {
-  turbopack: {}, // ← ★これを追加（超重要）
+  turbopack: {}, // ← これも必須
 };
 
 export default withPWA(nextConfig);
