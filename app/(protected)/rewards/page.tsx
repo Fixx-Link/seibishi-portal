@@ -2,6 +2,7 @@ import { cookies } from "next/headers"
 import { createServerClient } from "@supabase/ssr"
 import { getCompletedJobsByEmail } from "@/lib/notion/jobs"
 import { getMechanicByEmail } from "@/lib/notion/mechanics"
+import MonthSelector from "@/components/MonthSelector"
 
 /* ------------------------------ */
 function formatDateOnly(date: Date) {
@@ -123,21 +124,7 @@ export default async function RewardsPage({
     <div className="p-4 max-w-full">
       <h1 className="text-2xl font-bold mb-4">報酬確認</h1>
 
-      <div className="flex gap-2 mb-4 flex-wrap">
-        {months.map((m) => (
-          <a
-            key={m.label}
-            href={`/rewards?month=${encodeURIComponent(m.label)}`}
-            className={`px-3 py-1 rounded-lg border text-xs ${
-              m.label === selected.label
-                ? "bg-black text-white"
-                : "bg-white"
-            }`}
-          >
-            {m.label}
-          </a>
-        ))}
-      </div>
+      <MonthSelector months={months} selected={selected.label} />
 
       <div className="mb-6">
         <a
