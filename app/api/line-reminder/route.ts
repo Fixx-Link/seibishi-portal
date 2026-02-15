@@ -23,7 +23,7 @@ export async function GET(req: Request) {
       const props = page.properties
 
       const mechanicLineId =
-        props?.["LINE_ID"]?.rich_text?.[0]?.plain_text ?? ""
+        props["LINE_ID"]?.rollup?.array[0]?.rich_text[0]?.plain_text
 
       if (!mechanicLineId) continue
 
